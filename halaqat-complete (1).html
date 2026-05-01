@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نظام تقارير الحلقات</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Cairo', sans-serif; background: #f0f4f8; min-height: 100vh; }
+
+  /* ===== SHARED ===== */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #1a6b3a, #2d9b57);
+    color: white; border: none; border-radius: 12px;
+    font-family: 'Cairo', sans-serif; font-size: 15px; font-weight: 700;
+    cursor: pointer; padding: 14px 24px;
+    box-shadow: 0 4px 14px rgba(26,107,58,0.3); transition: all 0.2s;
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(26,107,58,0.4); }
+
+  /* ===== HOME ===== */
+  .home-wrap {
+    min-height: 100vh; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; padding: 32px 20px; gap: 20px;
+  }
+  .home-logo { font-size: 64px; }
+  .home-title { font-size: 26px; font-weight: 900; color: #1a1a2e; text-align: center; }
+  .home-sub { font-size: 14px; color: #6b7280; text-align: center; }
+  .home-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; max-width: 420px; margin-top: 10px; }
+  .home-card {
+    background: white; border-radius: 16px; padding: 24px 16px;
+    text-align: center; cursor: pointer; border: 2px solid #e5e7eb;
+    transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .home-card:hover { border-color: #1a6b3a; transform: translateY(-3px); box-shadow: 0 8px 20px rgba(26,107,58,0.15); }
+  .home-card .card-icon { font-size: 36px; margin-bottom: 10px; }
+  .home-card .card-title { font-size: 15px; font-weight: 700; color: #1a1a2e; }
+  .home-card .card-sub { font-size: 12px; color: #6b7280; margin-top: 4px; }
+
+  /* ===== FORM PAGE ===== */
+  .form-page { padding: 20px 16px; max-width: 560px; margin: 0 auto; }
+
+  .top-bar {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+  }
+  .back-btn {
+    background: white; border: 1.5px solid #e5e7eb; border-radius: 10px;
+    padding: 8px 14px; font-family: 'Cairo', sans-serif; font-size: 13px;
+    font-weight: 700; cursor: pointer; color: #374151; transition: all 0.15s;
+  }
+  .back-btn:hover { border-color: #1a6b3a; color: #1a6b3a; }
+  .top-title { font-size: 17px; font-weight: 900; color: #1a1a2e; }
+
+  .f-header {
+    background: linear-gradient(135deg, #1a6b3a, #2d9b57);
+    border-radius: 16px; padding: 22px; text-align: center; color: white; margin-bottom: 16px;
+  }
+  .f-header h1 { font-size: 20px; font-weight: 900; }
+  .f-header p { font-size: 12px; opacity: 0.8; margin-top: 4px; }
+
+  .card {
+    background: white; border-radius: 14px; padding: 18px;
+    margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1.5px solid #e5e7eb;
+  }
+  .q-label {
+    font-size: 15px; font-weight: 700; color: #1a1a2e; margin-bottom: 14px;
+    display: flex; align-items: flex-start; gap: 8px; line-height: 1.5;
+  }
+  .q-icon { font-size: 20px; flex-shrink: 0; }
+  .yn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .yn-btn {
+    padding: 13px; border: 2px solid #e5e7eb; border-radius: 10px;
+    font-family: 'Cairo', sans-serif; font-size: 14px; font-weight: 700;
+    cursor: pointer; background: white; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .yn-btn.yes.selected { background: #e8f5ee; border-color: #1a6b3a; color: #1a6b3a; }
+  .yn-btn.no.selected { background: #fef2f2; border-color: #dc2626; color: #dc2626; }
+  .yn-btn:hover { opacity: 0.85; }
+
+  .extra-field { margin-top: 12px; display: none; border-top: 1px solid #f3f4f6; padding-top: 12px; }
+  .extra-field.show { display: block; }
+  .extra-label { font-size: 11px; font-weight: 700; color: #6b7280; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .extra-input {
+    width: 100%; padding: 10px 12px; border: 1.5px solid #e5e7eb; border-radius: 8px;
+    font-family: 'Cairo', sans-serif; font-size: 13px; resize: vertical; min-height: 72px;
+    background: #fafafa;
+  }
+  .extra-input:focus { outline: none; border-color: #1a6b3a; background: white; }
+  .num-input {
+    width: 100%; padding: 10px 12px; border: 1.5px solid #e5e7eb; border-radius: 8px;
+    font-family: 'Cairo', sans-serif; font-size: 15px; font-weight: 700; text-align: center;
+  }
+  .num-input:focus { outline: none; border-color: #1a6b3a; }
+
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .info-field label { display: block; font-size: 11px; font-weight: 700; color: #6b7280; margin-bottom: 5px; }
+  .info-field input, .info-field select {
+    width: 100%; padding: 10px 12px; border: 1.5px solid #e5e7eb; border-radius: 8px;
+    font-family: 'Cairo', sans-serif; font-size: 13px;
+  }
+  .info-field input:focus, .info-field select:focus { outline: none; border-color: #1a6b3a; }
+  .section-tag {
+    font-size: 11px; font-weight: 700; color: #1a6b3a; background: #e8f5ee;
+    padding: 3px 10px; border-radius: 50px; display: inline-block; margin-bottom: 14px;
+  }
+
+  .success-screen {
+    display: none; text-align: center; background: white; border-radius: 16px;
+    padding: 40px 24px; box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+  }
+  .success-screen.show { display: block; }
+  .success-screen .s-icon { font-size: 56px; margin-bottom: 14px; }
+  .success-screen h2 { font-size: 20px; font-weight: 900; color: #1a6b3a; }
+  .success-screen p { color: #6b7280; margin-top: 8px; font-size: 13px; }
+  .btn-reset {
+    margin-top: 20px; padding: 11px 28px; background: #f3f4f6; border: none;
+    border-radius: 10px; font-family: 'Cairo', sans-serif; font-size: 14px;
+    font-weight: 700; cursor: pointer; color: #374151; margin-left: 8px;
+  }
+
+  /* ===== ADMIN PAGE ===== */
+  .admin-page { padding: 16px; max-width: 680px; margin: 0 auto; }
+
+  .admin-nav {
+    background: linear-gradient(135deg, #1a1a2e, #2d3561);
+    border-radius: 14px; padding: 16px 20px; margin-bottom: 16px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .admin-nav-title { color: white; font-size: 17px; font-weight: 900; }
+  .admin-nav-sub { color: rgba(255,255,255,0.6); font-size: 11px; margin-top: 2px; }
+  .btn-danger {
+    background: #fef2f2; border: 1.5px solid #fecaca; color: #dc2626;
+    border-radius: 8px; padding: 7px 14px; font-family: 'Cairo', sans-serif;
+    font-size: 12px; font-weight: 700; cursor: pointer;
+  }
+
+  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+  .stat-box {
+    background: white; border-radius: 12px; padding: 14px; text-align: center;
+    border: 1.5px solid #e5e7eb; box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  }
+  .stat-box .s-num { font-size: 26px; font-weight: 900; line-height: 1; }
+  .stat-box .s-lbl { font-size: 11px; color: #6b7280; margin-top: 4px; }
+
+  .report-entry {
+    background: white; border-radius: 12px; margin-bottom: 10px;
+    border: 1.5px solid #e5e7eb; overflow: hidden;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  }
+  .report-head {
+    padding: 14px 16px; display: flex; align-items: center;
+    justify-content: space-between; cursor: pointer;
+  }
+  .report-head:hover { background: #fafafa; }
+  .rh-left { display: flex; align-items: center; gap: 10px; }
+  .avatar {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: linear-gradient(135deg, #1a6b3a, #2d9b57);
+    color: white; font-size: 16px; font-weight: 900;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .r-name { font-size: 14px; font-weight: 700; }
+  .r-meta { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+  .r-dots { display: flex; gap: 4px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; }
+  .dot.ok { background: #22c55e; }
+  .dot.warn { background: #f59e0b; }
+  .dot.bad { background: #ef4444; }
+
+  .report-body { padding: 0 16px 14px; display: none; }
+  .report-body.open { display: block; }
+  .r-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 8px 10px; border-radius: 8px; margin-bottom: 6px; font-size: 13px;
+  }
+  .r-row.ok { background: #f0fdf4; color: #166534; }
+  .r-row.warn { background: #fffbeb; color: #92400e; }
+  .r-row.bad { background: #fef2f2; color: #991b1b; }
+  .r-row-icon { font-size: 15px; flex-shrink: 0; }
+  .r-row-text { font-weight: 600; }
+  .r-row-note { font-size: 11px; opacity: 0.8; margin-top: 2px; font-weight: 400; }
+
+  .empty-state {
+    text-align: center; padding: 48px 24px; color: #9ca3af;
+    background: white; border-radius: 14px; border: 1.5px dashed #e5e7eb;
+  }
+  .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-text { font-size: 15px; font-weight: 700; }
+  .empty-sub { font-size: 13px; margin-top: 6px; }
+
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: #1a1a2e; color: white; padding: 11px 22px;
+    border-radius: 50px; font-size: 13px; font-weight: 700;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3); transition: transform 0.3s; z-index: 999;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  .admin-pass-wrap {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px;
+  }
+  .admin-pass-card {
+    background: white; border-radius: 16px; padding: 32px 24px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1); width: 100%; max-width: 340px; text-align: center;
+  }
+  .admin-pass-card .lock { font-size: 48px; margin-bottom: 16px; }
+  .admin-pass-card h2 { font-size: 18px; font-weight: 900; margin-bottom: 6px; }
+  .admin-pass-card p { font-size: 13px; color: #6b7280; margin-bottom: 20px; }
+  .pass-input {
+    width: 100%; padding: 12px; border: 1.5px solid #e5e7eb; border-radius: 10px;
+    font-family: 'Cairo', sans-serif; font-size: 18px; text-align: center;
+    letter-spacing: 6px; margin-bottom: 14px;
+  }
+  .pass-input:focus { outline: none; border-color: #1a6b3a; }
+</style>
+</head>
+<body>
+
+<!-- ===== HOME ===== -->
+<div class="page active" id="page-home">
+  <div class="home-wrap">
+    <div class="home-logo">🕌</div>
+    <div class="home-title">نظام إدارة الحلقات القرآنية</div>
+    <div class="home-sub">اختر ما تريد القيام به</div>
+    <div class="home-cards">
+      <div class="home-card" onclick="go('page-form')">
+        <div class="card-icon">📝</div>
+        <div class="card-title">رفع تقرير</div>
+        <div class="card-sub">للمعلمين</div>
+      </div>
+      <div class="home-card" onclick="go('page-admin-login')">
+        <div class="card-icon">📊</div>
+        <div class="card-title">لوحة المتابعة</div>
+        <div class="card-sub">للإدارة فقط</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== FORM PAGE ===== -->
+<div class="page" id="page-form">
+  <div class="form-page">
+    <div class="top-bar">
+      <button class="back-btn" onclick="go('page-home')">→ رجوع</button>
+      <div class="top-title">تقرير الحلقة الأسبوعي</div>
+    </div>
+
+    <div id="form-content">
+      <!-- Info -->
+      <div class="card">
+        <span class="section-tag">معلومات الحلقة</span>
+        <div class="info-grid">
+          <div class="info-field">
+            <label>اسم المعلم</label>
+            <input type="text" id="f-teacher" placeholder="الشيخ أحمد...">
+          </div>
+          <div class="info-field">
+            <label>الحلقة</label>
+            <select id="f-circle">
+              <option value="">اختر</option>
+              <option>حلقة الفجر</option>
+              <option>حلقة المغرب</option>
+              <option>حلقة العشاء</option>
+              <option>حلقة الضحى</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Q1 -->
+      <div class="card">
+        <div class="q-label"><span class="q-icon">💻</span> هل جميع الطلاب مضافون في المنصة؟</div>
+        <div class="yn-group">
+          <button class="yn-btn yes" onclick="pick(this,'q1','yes')">✅ نعم</button>
+          <button class="yn-btn no" onclick="pick(this,'q1','no')">❌ لا</button>
+        </div>
+        <div class="extra-field" id="q1-x">
+          <div class="extra-label">من لم يُضَف؟</div>
+          <textarea class="extra-input" id="q1-note" placeholder="اكتب الأسماء..."></textarea>
+        </div>
+      </div>
+
+      <!-- Q2 -->
+      <div class="card">
+        <div class="q-label"><span class="q-icon">👨‍👦</span> هل جميع أولياء الأمور في المجموعة العامة؟</div>
+        <div class="yn-group">
+          <button class="yn-btn yes" onclick="pick(this,'q2','yes')">✅ نعم</button>
+          <button class="yn-btn no" onclick="pick(this,'q2','no')">❌ لا</button>
+        </div>
+        <div class="extra-field" id="q2-x">
+          <div class="extra-label">أسماء غير المضافين</div>
+          <textarea class="extra-input" id="q2-note" placeholder="اكتب الأسماء..."></textarea>
+        </div>
+      </div>
+
+      <!-- Q3 -->
+      <div class="card">
+        <div class="q-label"><span class="q-icon">🪪</span> هل جميع الطلاب لديهم بطاقات؟</div>
+        <div class="yn-group">
+          <button class="yn-btn yes" onclick="pick(this,'q3','yes')">✅ نعم</button>
+          <button class="yn-btn no" onclick="pick(this,'q3','no')">❌ لا</button>
+        </div>
+        <div class="extra-field" id="q3-x">
+          <div class="extra-label">العدد والأسماء</div>
+          <input type="number" class="num-input" id="q3-count" placeholder="العدد" min="0" style="margin-bottom:8px">
+          <textarea class="extra-input" id="q3-note" placeholder="الأسماء..."></textarea>
+        </div>
+      </div>
+
+      <!-- Q4 -->
+      <div class="card">
+        <div class="q-label"><span class="q-icon">📖</span> هل جميع الطلاب استلموا المصاحف؟</div>
+        <div class="yn-group">
+          <button class="yn-btn yes" onclick="pick(this,'q4','yes')">✅ نعم</button>
+          <button class="yn-btn no" onclick="pick(this,'q4','no')">❌ لا</button>
+        </div>
+        <div class="extra-field" id="q4-x">
+          <div class="extra-label">العدد والأسماء</div>
+          <input type="number" class="num-input" id="q4-count" placeholder="العدد" min="0" style="margin-bottom:8px">
+          <textarea class="extra-input" id="q4-note" placeholder="الأسماء..."></textarea>
+        </div>
+      </div>
+
+      <!-- Q5 -->
+      <div class="card">
+        <div class="q-label"><span class="q-icon">🚫</span> هل يوجد طلاب منقطعون؟</div>
+        <div class="yn-group">
+          <button class="yn-btn yes" onclick="pick(this,'q5','no')">✅ لا يوجد</button>
+          <button class="yn-btn no" onclick="pick(this,'q5','yes')">❌ يوجد</button>
+        </div>
+        <div class="extra-field" id="q5-x">
+          <div class="extra-label">الأسماء ومدة الانقطاع</div>
+          <textarea class="extra-input" id="q5-note" style="min-height:90px" placeholder="مثال: عمر — أسبوعان&#10;سعد — أسبوع واحد"></textarea>
+          <div style="margin-top:10px">
+            <div class="extra-label">هل تم التواصل معهم؟</div>
+            <div class="yn-group" style="margin-top:6px">
+              <button class="yn-btn yes" onclick="pick(this,'q5b','yes')" style="padding:10px;font-size:13px">✅ نعم</button>
+              <button class="yn-btn no" onclick="pick(this,'q5b','no')" style="padding:10px;font-size:13px">❌ لا</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Q6 -->
+      <div class="card">
+        <div class="q-label"><span class="q-icon">📝</span> هل لديك ملاحظات إضافية؟</div>
+        <div class="yn-group">
+          <button class="yn-btn yes" onclick="pick(this,'q6','no')">✅ لا يوجد</button>
+          <button class="yn-btn no" onclick="pick(this,'q6','yes')">📝 يوجد</button>
+        </div>
+        <div class="extra-field" id="q6-x">
+          <div class="extra-label">ملاحظاتك</div>
+          <textarea class="extra-input" id="q6-note" style="min-height:90px" placeholder="اكتب هنا..."></textarea>
+        </div>
+      </div>
+
+      <button class="btn-primary" style="width:100%;font-size:16px;padding:15px" onclick="submitReport()">📤 إرسال التقرير</button>
+    </div>
+
+    <div class="success-screen" id="success-screen">
+      <div class="s-icon">✅</div>
+      <h2>تم إرسال التقرير بنجاح</h2>
+      <p>جزاك الله خيراً، تم حفظ التقرير وسيطلع عليه المسؤول</p>
+      <button class="btn-reset" onclick="resetForm()">🔄 تقرير جديد</button>
+      <button class="btn-reset" onclick="go('page-home')">🏠 الرئيسية</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ADMIN LOGIN ===== -->
+<div class="page" id="page-admin-login">
+  <div class="admin-pass-wrap">
+    <div class="admin-pass-card">
+      <div class="lock">🔐</div>
+      <h2>لوحة الإدارة</h2>
+      <p>أدخل كلمة المرور للمتابعة</p>
+      <input type="password" class="pass-input" id="pass-input" placeholder="••••" maxlength="6"
+        onkeydown="if(event.key==='Enter') checkPass()">
+      <button class="btn-primary" style="width:100%" onclick="checkPass()">دخول</button>
+      <div style="margin-top:12px">
+        <button class="back-btn" onclick="go('page-home')">→ رجوع</button>
+      </div>
+      <div style="margin-top:16px;font-size:11px;color:#9ca3af">كلمة المرور الافتراضية: 1234</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ADMIN DASHBOARD ===== -->
+<div class="page" id="page-admin">
+  <div class="admin-page">
+    <div class="admin-nav">
+      <div>
+        <div class="admin-nav-title">📊 لوحة متابعة التقارير</div>
+        <div class="admin-nav-sub" id="admin-date"></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-danger" onclick="clearAll()">🗑 مسح الكل</button>
+        <button class="back-btn" onclick="go('page-home')" style="background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.3);color:white">→ رجوع</button>
+      </div>
+    </div>
+
+    <div class="stats-row" id="admin-stats"></div>
+    <div id="admin-reports"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== STATE =====
+const answers = {};
+const PASS = '1234';
+
+// ===== NAV =====
+function go(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+  if (pageId === 'page-admin') renderAdmin();
+}
+
+// ===== FORM =====
+function pick(btn, q, val) {
+  btn.closest('.yn-group').querySelectorAll('.yn-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  answers[q] = val;
+
+  const extra = document.getElementById(q + '-x');
+  if (extra) {
+    const showOn = (q === 'q5' || q === 'q6') ? 'yes' : 'no';
+    extra.classList.toggle('show', val === showOn);
+  }
+}
+
+function submitReport() {
+  const teacher = document.getElementById('f-teacher').value.trim();
+  const circle = document.getElementById('f-circle').value;
+  if (!teacher || !circle) { toast('⚠️ أدخل اسم المعلم والحلقة'); return; }
+
+  const required = ['q1','q2','q3','q4','q5','q6'];
+  if (required.some(q => !answers[q])) { toast('⚠️ أجب على جميع الأسئلة'); return; }
+
+  const report = {
+    id: Date.now(),
+    teacher, circle,
+    date: new Date().toLocaleString('ar-SA'),
+    q1: answers.q1, q1note: val('q1-note'),
+    q2: answers.q2, q2note: val('q2-note'),
+    q3: answers.q3, q3count: val('q3-count'), q3note: val('q3-note'),
+    q4: answers.q4, q4count: val('q4-count'), q4note: val('q4-note'),
+    q5: answers.q5, q5note: val('q5-note'), q5b: answers.q5b || '',
+    q6: answers.q6, q6note: val('q6-note'),
+  };
+
+  const reports = getReports();
+  reports.unshift(report);
+  localStorage.setItem('halaqat_reports', JSON.stringify(reports));
+
+  document.getElementById('form-content').style.display = 'none';
+  document.getElementById('success-screen').classList.add('show');
+}
+
+function val(id) {
+  const el = document.getElementById(id);
+  return el ? el.value.trim() : '';
+}
+
+function resetForm() {
+  Object.keys(answers).forEach(k => delete answers[k]);
+  document.getElementById('f-teacher').value = '';
+  document.getElementById('f-circle').value = '';
+  document.querySelectorAll('.yn-btn').forEach(b => b.classList.remove('selected'));
+  document.querySelectorAll('.extra-field').forEach(f => f.classList.remove('show'));
+  document.querySelectorAll('textarea').forEach(t => t.value = '');
+  document.querySelectorAll('input[type=number]').forEach(i => i.value = '');
+  document.getElementById('form-content').style.display = 'block';
+  document.getElementById('success-screen').classList.remove('show');
+}
+
+// ===== ADMIN =====
+function checkPass() {
+  const p = document.getElementById('pass-input').value;
+  if (p === PASS) { document.getElementById('pass-input').value = ''; go('page-admin'); }
+  else { toast('❌ كلمة المرور خاطئة'); }
+}
+
+function getReports() {
+  try { return JSON.parse(localStorage.getItem('halaqat_reports') || '[]'); } catch { return []; }
+}
+
+function renderAdmin() {
+  const reports = getReports();
+  document.getElementById('admin-date').textContent = 'آخر تحديث: ' + new Date().toLocaleString('ar-SA');
+
+  // Stats
+  const issues = reports.filter(r => r.q1==='no'||r.q2==='no'||r.q3==='no'||r.q4==='no'||r.q5==='yes').length;
+  document.getElementById('admin-stats').innerHTML = `
+    <div class="stat-box"><div class="s-num" style="color:#1a6b3a">${reports.length}</div><div class="s-lbl">تقرير مُرسَل</div></div>
+    <div class="stat-box"><div class="s-num" style="color:#ef4444">${reports.filter(r=>r.q5==='yes').length}</div><div class="s-lbl">حلقات بها منقطعون</div></div>
+    <div class="stat-box"><div class="s-num" style="color:#f59e0b">${issues}</div><div class="s-lbl">تقارير بها مشاكل</div></div>
+  `;
+
+  // Reports
+  const container = document.getElementById('admin-reports');
+  if (!reports.length) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-text">لا توجد تقارير بعد</div><div class="empty-sub">سيظهر هنا كل تقرير يرسله المعلمون</div></div>`;
+    return;
+  }
+
+  container.innerHTML = reports.map((r, i) => {
+    const rows = buildRows(r);
+    const dots = rows.map(row => `<div class="dot ${row.cls}"></div>`).join('');
+    const body = rows.map(row => `
+      <div class="r-row ${row.cls}">
+        <div class="r-row-icon">${row.icon}</div>
+        <div><div class="r-row-text">${row.text}</div>${row.note ? `<div class="r-row-note">${row.note}</div>` : ''}</div>
+      </div>`).join('');
+
+    return `
+      <div class="report-entry">
+        <div class="report-head" onclick="toggleR('rb${i}','rc${i}')">
+          <div class="rh-left">
+            <div class="avatar">${r.teacher.charAt(r.teacher.length>3?3:0)}</div>
+            <div>
+              <div class="r-name">${r.teacher}</div>
+              <div class="r-meta">${r.circle} — ${r.date}</div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+            <div class="r-dots">${dots}</div>
+            <span id="rc${i}" style="font-size:11px;color:#9ca3af">▼</span>
+          </div>
+        </div>
+        <div class="report-body" id="rb${i}">${body}</div>
+      </div>`;
+  }).join('');
+}
+
+function buildRows(r) {
+  return [
+    { cls: r.q1==='yes'?'ok':'bad', icon: '💻',
+      text: r.q1==='yes' ? 'جميع الطلاب مضافون في المنصة' : 'يوجد طلاب غير مضافين في المنصة',
+      note: r.q1note },
+    { cls: r.q2==='yes'?'ok':'warn', icon: '👨‍👦',
+      text: r.q2==='yes' ? 'جميع أولياء الأمور في المجموعة' : 'يوجد أولياء أمور غير مضافين',
+      note: r.q2note },
+    { cls: r.q3==='yes'?'ok':'warn', icon: '🪪',
+      text: r.q3==='yes' ? 'جميع الطلاب لديهم بطاقات' : `${r.q3count || ''} طلاب بدون بطاقة`,
+      note: r.q3note },
+    { cls: r.q4==='yes'?'ok':'warn', icon: '📖',
+      text: r.q4==='yes' ? 'جميع الطلاب استلموا المصاحف' : `${r.q4count || ''} طلاب لم يستلموا المصحف`,
+      note: r.q4note },
+    { cls: r.q5==='no'?'ok':'bad', icon: '🚫',
+      text: r.q5==='no' ? 'لا يوجد منقطعون' : 'يوجد طلاب منقطعون',
+      note: r.q5note + (r.q5b ? ` — التواصل: ${r.q5b==='yes'?'تم ✅':'لم يتم ❌'}` : '') },
+    ...(r.q6==='yes' ? [{ cls:'warn', icon:'📝', text:'توجد ملاحظات إضافية', note: r.q6note }] : []),
+  ];
+}
+
+function toggleR(bodyId, chevId) {
+  const body = document.getElementById(bodyId);
+  const chev = document.getElementById(chevId);
+  const open = body.classList.toggle('open');
+  chev.textContent = open ? '▲' : '▼';
+}
+
+function clearAll() {
+  if (confirm('هل أنت متأكد من مسح جميع التقارير؟')) {
+    localStorage.removeItem('halaqat_reports');
+    renderAdmin();
+    toast('🗑 تم مسح جميع التقارير');
+  }
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+</script>
+</body>
+</html>
